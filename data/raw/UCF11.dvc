@@ -1,0 +1,6 @@
+outs:
+- md5: 07dd560b1b8032c0bbb172a7ef43c2ef.dir
+  size: 1157866573
+  nfiles: 3185
+  hash: md5
+  path: UCF11
