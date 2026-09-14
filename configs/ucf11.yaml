@@ -1,0 +1,28 @@
+# Config cho UCF11 (YouTube Action dataset, 11 lớp) — dùng để TEST pipeline
+# nhanh trước khi chạy full UCF101 (phiên 13.1). Dataset nhỏ (~1600 video),
+# an toàn cho quota DagsHub 20GB kể cả sau khi sinh data/interim/.
+
+project:
+  name: video-action-ucf11
+  seed: 42
+
+data:
+  frames_per_video: 16
+  frame_size: [224, 224]
+  # use_motion_channel=false (khác base.yaml) — SpatialBackbone chưa hỗ
+  # trợ 4 channel (gap ghi từ phiên 5.1), để true sẽ crash ngay ở
+  # extract_features/serving. Config THẬT dùng để chạy nên tránh bật cờ
+  # còn gap chưa vá.
+  use_motion_channel: false
+  num_classes: 11
+
+phase1:
+  embed_dim_out: 512
+  epochs: 10
+  learning_rate: 0.0003
+
+phase2:
+  input_dim: 512
+  num_heads: 8
+  epochs: 15
+  learning_rate: 0.0001

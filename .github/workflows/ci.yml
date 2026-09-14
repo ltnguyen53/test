@@ -1,0 +1,94 @@
+name: CI
+
+"on": [push, pull_request]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"  # cache wheel torch/torchvision giữa các lần chạy — không cache, mỗi push đều tải lại hàng trăm MB, chậm vô ích
+
+      - run: pip install --no-deps -e .
+      # GAP THẬT vá ở phiên 13.4: trước đây chỉ `pip install -e ".[dev]"`
+      # — thiếu hẳn mlflow (tracking, dùng ở test_callbacks.py),
+      # fastapi/onnxruntime/opencv (serving, test_serving.py/
+      # test_pipeline.py), onnx (export, test_export.py/test_evaluate.py).
+      # Trên máy CÁ NHÂN đã lỡ cài đủ thứ nên không lộ ra, nhưng 1 runner
+      # GitHub Actions SẠCH sẽ ModuleNotFoundError ngay — verify THẬT bằng
+      # cách cài lại đúng 1 dòng cũ trong sandbox riêng, tái hiện đúng lỗi.
+      # 4 file .lock (phiên 13.4, requirements/) đã verify KHÔNG xung đột
+      # version khi cài chung (xem header từng file).
+      - run: |
+          pip install \
+            -r requirements/dev.lock \
+            -r requirements/tracking.lock \
+            -r requirements/serving.lock \
+            -r requirements/export.lock
+
+      - run: pre-commit run --all-files
+
+      # -m "not gpu": marker đã khai báo từ phiên 1.1 (pyproject.toml
+      # [tool.pytest.ini_options] markers). Hiện KHÔNG test nào trong repo
+      # gắn @pytest.mark.gpu (mọi test đều chạy được trên CPU) — giữ filter
+      # này để phòng khi sau này thêm test cần GPU thật, không phải vì cần
+      # ngay bây giờ.
+      - run: pytest tests/unit tests/data -m "not gpu" --cov=src
+
+  # Vá gap phát hiện ở phiên 12.2 (checklist production-readiness, roadmap
+  # mục 7): CHƯA TỪNG có gì chặn PR nếu accuracy giảm. Chỉ chạy trên
+  # pull_request (cần base_ref để so sánh, không có ý nghĩa trên push
+  # thường). reports/evaluate_metrics.json là metric `cache: false` (dvc.yaml
+  # phiên 7.2) — git-tracked trực tiếp, `dvc metrics diff` đọc được từ git
+  # history ở CẢ 2 revision mà KHÔNG cần dvc pull dữ liệu nhị phân nào.
+  #
+  # THẬT THÀ: chưa từng chạy thử job này (không có GitHub Actions runner
+  # trong sandbox) — định dạng chính xác của `dvc metrics diff --json`
+  # chưa được xác nhận, code dưới có xử lý phòng hờ nhưng CẦN bạn tự chạy
+  # 1 PR thật để xác nhận.
+  metrics-guard:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # cần đủ git history để so sánh với base_ref
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - run: pip install --no-deps -e .
+      - run: pip install -r requirements/tracking.lock
+
+      - run: git fetch origin "${{ github.base_ref }}"
+
+      - name: Chặn PR nếu val_accuracy giảm quá ngưỡng
+        run: |
+          dvc metrics diff "origin/${{ github.base_ref }}" --json > /tmp/metrics_diff.json
+          cat /tmp/metrics_diff.json
+          python - <<'PYEOF'
+          import json
+
+          THRESHOLD = 0.02  # cho phép giảm tối đa 2 điểm % accuracy tuyệt đối
+
+          with open("/tmp/metrics_diff.json") as f:
+              diff = json.load(f)
+
+          entry = diff.get("reports/evaluate_metrics.json", {}).get("val_accuracy")
+          if entry is None:
+              print("Không tìm thấy val_accuracy trong metrics diff — bỏ qua kiểm tra "
+                    "(có thể base branch chưa từng chạy stage evaluate).")
+          else:
+              change = entry.get("diff", 0)
+              print(f"val_accuracy: {entry.get('old')} -> {entry.get('new')} (diff={change})")
+              if change < -THRESHOLD:
+                  raise SystemExit(
+                      f"Accuracy giảm {abs(change):.4f} > ngưỡng {THRESHOLD} — chặn PR."
+                  )
+          PYEOF

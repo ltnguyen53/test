@@ -1,0 +1,6 @@
+# requirements/ingest.in — nguồn cho requirements/ingest.lock (phiên
+# sau 14.8, khi bổ sung data/raw_cache.py::extract_archive()).
+# CỐ Ý KHÔNG torch (cùng lý do serving/demo/monitoring) — chỉ cần lúc
+# ingest dữ liệu 1 lần (giải nén UCF101/UCF11 .rar/.zip vào data/raw/),
+# không cần cho training/serving.
+rarfile>=4.0

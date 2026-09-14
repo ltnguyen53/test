@@ -1,0 +1,10 @@
+# requirements/monitoring.in — nguồn cho requirements/monitoring.lock
+# (phiên 13.4). CỐ Ý KHÔNG torch (xem giải thích ở serving.in) —
+# monitoring/drift_report.py chỉ đọc CSV/DB qua pandas + evidently, không
+# đụng tới model.
+evidently>=0.4.30
+psycopg2-binary>=2.9
+pandas>=2.0
+pydantic>=2.6
+pyyaml>=6.0
+python-dotenv>=1.0

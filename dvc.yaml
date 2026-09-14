@@ -1,0 +1,151 @@
+# DAG pipeline (mục 4.2 roadmap). LƯU Ý: khác với roadmap mẫu (nhiều file
+# config tách rời theo stage), project này dùng 1 AppConfig hợp nhất
+# (config/schema.py, phiên 1.2) — nên mỗi stage chỉ khai báo params SCOPE
+# THEO KEY cụ thể trong file config đang chọn, không theo dõi cả file. Nhờ
+# vậy đổi phase1.learning_rate KHÔNG làm invalidate cache của stage
+# preprocess.
+#
+# `${config_file}` (phiên 13.5, xem params.yaml): TRƯỚC đây hard-code
+# thẳng `configs/base.yaml` ở cả `cmd:` lẫn `params:` của mọi stage — đổi
+# dataset (vd sang UCF11, phiên 13.1) phải SỬA TAY 6 chỗ, dễ sửa sót 1
+# chỗ khiến params: track nhầm file (DVC nghĩ cache còn hợp lệ trong khi
+# giá trị thật đã đổi — silent bug, không lỗi rõ ràng). Giờ CHỈ sửa
+# params.yaml (hoặc `dvc exp run -S config_file=...`, xem file đó) — DVC
+# tự lan giá trị vào tất cả 6 stage nhất quán, đã verify thật bằng dvc.lock
+# (params: khớp đúng tên file config đang chọn, không phải luôn luôn
+# configs/base.yaml).
+#
+# Thêm dần từng stage theo đúng phiên — hiện tại (phiên 4.2) mới có
+# 'preprocess'. 'train_phase1' sẽ thêm ở phiên 4.3 sau khi có
+# training/phase1_trainer.py.
+
+vars:
+  - params.yaml
+
+stages:
+  preprocess:
+    cmd: python scripts/run_preprocess.py --config ${config_file}
+    deps:
+      - data/raw
+      - src/video_action_mlops/data/preprocessing.py
+      - scripts/run_preprocess.py
+    params:
+      - ${config_file}:
+          - data.frames_per_video
+          - data.frame_size
+          - data.use_motion_channel
+    outs:
+      - data/interim
+
+  train_phase1:
+    cmd: python scripts/run_train_phase1.py --config ${config_file}
+    deps:
+      - data/interim
+      - data/raw/labels.csv
+      - src/video_action_mlops/models/spatial.py
+      - src/video_action_mlops/models/registry.py
+      - src/video_action_mlops/data/datasets.py
+      - src/video_action_mlops/training/phase1_trainer.py
+      - scripts/run_train_phase1.py
+    params:
+      - ${config_file}:
+          - phase1.epochs
+          - phase1.learning_rate
+          - phase1.embed_dim_out
+          - data.num_classes
+    outs:
+      - models/phase1_checkpoint.pt:
+          cache: true
+      - reports/mlflow_parent_run_id.txt:
+          cache: false
+    metrics:
+      - reports/phase1_metrics.json:
+          cache: false
+
+  extract_features:
+    cmd: python scripts/run_extract_features.py --config ${config_file}
+    deps:
+      - data/interim
+      - models/phase1_checkpoint.pt
+      - src/video_action_mlops/models/spatial.py
+      - src/video_action_mlops/models/registry.py
+      - src/video_action_mlops/features/extract_embeddings.py
+      - scripts/run_extract_features.py
+    params:
+      - ${config_file}:
+          - phase1.embed_dim_out
+          - data.frames_per_video
+          - data.frame_size
+          - data.use_motion_channel
+    outs:
+      - data/processed
+
+  train_phase2:
+    cmd: python scripts/run_train_phase2.py --config ${config_file}
+    deps:
+      - data/processed
+      - data/raw/labels.csv
+      - models/phase1_checkpoint.pt
+      - reports/mlflow_parent_run_id.txt
+      - src/video_action_mlops/models/temporal.py
+      - src/video_action_mlops/models/registry.py
+      - src/video_action_mlops/data/datasets.py
+      - src/video_action_mlops/features/extract_embeddings.py
+      - src/video_action_mlops/training/phase2_trainer.py
+      - scripts/run_train_phase2.py
+    params:
+      - ${config_file}:
+          - phase2.input_dim
+          - phase2.num_heads
+          - phase2.epochs
+          - phase2.learning_rate
+          - data.num_classes
+    outs:
+      - models/phase2_checkpoint.pt:
+          cache: true
+    metrics:
+      - reports/phase2_metrics.json:
+          cache: false
+
+  export:
+    cmd: python scripts/run_export.py --config ${config_file}
+    deps:
+      - models/phase1_checkpoint.pt
+      - models/phase2_checkpoint.pt
+      - src/video_action_mlops/export/to_onnx.py
+      - src/video_action_mlops/export/verify_parity.py
+      - src/video_action_mlops/models/temporal.py
+      - scripts/run_export.py
+    params:
+      - ${config_file}:
+          - phase1.embed_dim_out
+          - data.frame_size
+          - phase2.input_dim
+          - phase2.num_heads
+          - data.num_classes
+          - data.frames_per_video
+    outs:
+      - models/spatial.onnx:
+          cache: true
+      - models/temporal.onnx:
+          cache: true
+    metrics:
+      - reports/export_parity.json:
+          cache: false
+
+  evaluate:
+    cmd: python scripts/run_evaluate.py --config ${config_file}
+    deps:
+      - data/processed
+      - data/raw/labels.csv
+      - models/temporal.onnx
+      - src/video_action_mlops/evaluation/evaluate.py
+      - src/video_action_mlops/data/labels.py
+      - scripts/run_evaluate.py
+    params:
+      - ${config_file}:
+          - data.num_classes
+    metrics:
+      - reports/evaluate_metrics.json:
+          cache: false
+

@@ -1,0 +1,9 @@
+# requirements/demo.in — nguồn cho requirements/demo.lock (phiên 13.4).
+# CỐ Ý KHÔNG torch (xem giải thích ở serving.in) — demo/gradio_app.py chạy
+# CPU Basic trên HF Spaces qua onnxruntime, không cần torch.
+gradio>=4.0
+onnxruntime>=1.18
+opencv-python-headless>=4.10
+pydantic>=2.6
+pyyaml>=6.0
+python-dotenv>=1.0

@@ -1,0 +1,71 @@
+# HF Spaces đọc file này ở ROOT repo của Space (không phải trong demo/) để
+# cài dependency trước khi chạy app_file (xem README_SPACES.md đi kèm).
+#
+# CỐ Ý KHÔNG có torch/torchvision (mục [project.dependencies] trong
+# pyproject.toml) — demo chạy CPU Basic qua onnxruntime, không cần torch.
+# Đây là 1 trong 4 chỗ áp dụng cùng mẫu hình "đường suy luận CPU-only
+# tránh torch" trong project (colab/bootstrap.ipynb phiên 6.3/13.3,
+# docker/serve.Dockerfile phiên 8.2, nightly-monitor.yml).
+#
+# PIN CHÍNH XÁC (phiên 13.4, không chỉ ">=" như trước) — nội dung ĐỒNG BỘ
+# THẲNG từ requirements/demo.lock (xem file đó cho cách sinh + verify đầy
+# đủ). HF Spaces build lại environment từ đầu mỗi lần deploy — không pin
+# chính xác thì 1 bản phát hành mới của bất kỳ gói nào cũng có thể âm thầm
+# làm hỏng Space đang chạy tốt, không có cách nào biết trước.
+
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+brotli==1.2.0
+certifi==2026.7.22
+click==8.5.0
+colorama==0.4.6
+fastapi==0.141.1
+filelock==3.32.6
+flatbuffers==25.12.19
+fsspec==2026.7.0
+gradio==6.26.0
+gradio-client==2.6.1
+groovy==0.1.2
+h11==0.16.0
+hf-gradio==0.4.1
+hf-xet==1.6.0
+httpcore==1.0.9
+httpx==0.28.1
+huggingface-hub==1.30.0
+idna==3.19
+jinja2==3.1.6
+markdown-it-py==4.2.0
+markupsafe==3.0.3
+mdurl==0.1.2
+mpmath==1.3.0
+numpy==2.5.3
+onnxruntime==1.24.4
+opencv-python-headless==5.0.0.93
+orjson==3.12.0
+packaging==26.3
+pandas==3.0.5
+pillow==12.3.0
+protobuf==6.33.6
+pydantic==2.13.5
+pydantic-core==2.46.5
+pydub==0.25.1
+pygments==2.21.0
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.3
+python-multipart==0.0.32
+pytz==2026.3.post1
+pyyaml==6.0.3
+rich==15.0.0
+safehttpx==0.1.7
+semantic-version==2.10.0
+shellingham==1.5.4
+six==1.17.0
+starlette==1.6.0
+sympy==1.14.0
+tomlkit==0.14.0
+tqdm==4.70.0
+typer==0.27.2
+typing-extensions==4.16.0
+typing-inspection==0.4.4
+uvicorn==0.52.4

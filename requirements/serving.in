@@ -1,0 +1,23 @@
+# requirements/serving.in — nguồn cho requirements/serving.lock (phiên 13.4).
+#
+# CỐ Ý KHÔNG dùng "-e .[serving]" (khác dev.lock/tracking.lock/export.lock):
+# [project.dependencies] trong pyproject.toml có torch/torchvision — image
+# serve (docker/serve.Dockerfile, phiên 8.2) CHỈ chạy ONNX Runtime, không
+# cần torch (nặng hàng GB vô ích). Đây là lần thứ 5 áp dụng đúng 1 mẫu hình
+# "đường suy luận CPU-only tránh torch" đã có trong project (colab/
+# bootstrap.ipynb phiên 6.3, docker/serve.Dockerfile phiên 8.2,
+# requirements.txt cho HF Spaces phiên 10.2, colab/bootstrap.ipynb phiên
+# 13.3 pin lại, nightly-monitor.yml) — liệt kê THẲNG package cần, không kế
+# thừa base dependencies của package.
+fastapi>=0.111
+uvicorn[standard]>=0.30
+onnxruntime>=1.18
+opencv-python-headless>=4.10
+# python-multipart: bug thật phát hiện ở phiên 13.2 (pyproject.toml) —
+# docker/serve.Dockerfile có DANH SÁCH RIÊNG (không đọc pyproject.toml),
+# cũng thiếu dòng này (cùng 1 bug, 2 chỗ) — sửa luôn ở đây, sẽ trỏ
+# Dockerfile qua lock file này ở bước sau thay vì danh sách hard-code.
+python-multipart>=0.0.9
+pydantic>=2.6
+pyyaml>=6.0
+python-dotenv>=1.0

@@ -1,0 +1,26 @@
+# Config cho UCF101 (101 lớp, ~13320 video) — dataset THẬT dùng để deploy
+# (phiên 13.1). Chạy thử configs/ucf11.yaml trước khi dùng file này —
+# UCF101 lớn hơn nhiều, tốn quota DagsHub (20GB free) và quota GPU Colab
+# hơn hẳn UCF11.
+
+project:
+  name: video-action-ucf101
+  seed: 42
+
+data:
+  frames_per_video: 16
+  frame_size: [224, 224]
+  # use_motion_channel=false — xem giải thích trong configs/ucf11.yaml
+  use_motion_channel: false
+  num_classes: 101
+
+phase1:
+  embed_dim_out: 512
+  epochs: 10
+  learning_rate: 0.0003
+
+phase2:
+  input_dim: 512
+  num_heads: 8
+  epochs: 15
+  learning_rate: 0.0001

@@ -1,0 +1,18 @@
+# ingest.lock — sinh sau phiên 14.8, khi bổ sung data/raw_cache.py
+# (phát hiện qua câu hỏi thực tế "unzip UCF101 ở đâu?").
+#
+# CÁCH SINH: `pip-compile requirements/ingest.in` THẬT qua mạng — package
+# này (rarfile) không có dependency nào khác (`pip show rarfile` xác
+# nhận Requires: rỗng), không có rủi ro xung đột version với 6 lock file
+# còn lại. Verify: cài + chạy tests/unit/test_raw_cache.py thật (tự tạo
+# file .rar thật bằng lệnh hệ thống `rar`, giải nén lại bằng chính
+# `unrar`/`rarfile` — không mock).
+#
+# LƯU Ý: KHÔNG kèm torch/torchvision — CỐ Ý, xem requirements/ingest.in
+# (chỉ cần lúc ingest dữ liệu 1 lần, không cần cho training/serving).
+# CŨNG CẦN công cụ hệ thống `unrar` (không cài qua pip được) — Ubuntu/
+# Debian: `apt install unrar`; Colab đã có sẵn theo mặc định.
+#
+# Cài lại: pip install -r requirements/ingest.lock
+
+rarfile==4.5

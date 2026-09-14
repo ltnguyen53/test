@@ -1,0 +1,27 @@
+# params.yaml — nguồn DUY NHẤT cho biến `config_file` mà dvc.yaml dùng để
+# chọn bộ config (phiên 13.5). KHÁC configs/base.yaml, configs/ucf11.yaml,
+# configs/ucf101.yaml (những file đó chứa GIÁ TRỊ thật — frames_per_video,
+# learning_rate...) — file này chỉ chứa 1 dòng: đang TRỎ vào file nào.
+#
+# ĐỔI DATASET (verify thật bằng dvc 3.67.1 trong sandbox, xem
+# docs/runbook.md mục "Đổi dataset" cho giải thích đầy đủ + lý do loại
+# phương án khác):
+#
+#   1) `dvc exp run -S config_file=configs/ucf11.yaml`
+#      — ĐÚNG "1 lệnh" như checklist yêu cầu. Ghi thẳng giá trị mới vào
+#      params.yaml ở workspace (không phải experiment tạm rồi biến mất) —
+#      `git diff params.yaml` sẽ thấy thay đổi, `git checkout params.yaml`
+#      để huỷ nếu đổi ý, `git add params.yaml dvc.lock && git commit` để
+#      giữ lại. `dvc.lock` sẽ tự cập nhật đúng file config MỚI (không phải
+#      configs/base.yaml) cho phần params tracking — đã verify bằng
+#      `cat dvc.lock` thật, không đoán.
+#
+#   2) Sửa tay dòng dưới rồi `dvc repro` — chậm hơn 1 bước nhưng dễ hiểu
+#      hơn khi mới học, không cần nhớ cú pháp `-S`.
+#
+# LƯU Ý: `dvc repro` (KHÔNG qua `dvc exp run -S`) bản DVC 3.67.1 KHÔNG có
+# cờ override param nào tương đương `--set-param` — đã thử `--set-param`
+# thật, DVC in ra usage/help nghĩa là cờ đó không tồn tại ở bản này. Đây
+# là lý do dùng `dvc exp run -S` thay vì cố tìm 1 cờ không có thật.
+config_file: configs/base.yaml
+

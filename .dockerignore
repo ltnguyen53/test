@@ -1,0 +1,22 @@
+# Không kéo vào build context của docker build (chậm, không cần thiết —
+# serve.Dockerfile chỉ COPY đích danh configs/base.yaml + 2 file .onnx,
+# không cần gì khác từ đây).
+.git
+.dvc/cache
+data/raw
+data/interim
+data/processed
+colab/
+notebooks/
+tests/
+docs/
+*.md
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+mlruns/
+mlartifacts/
+reports/

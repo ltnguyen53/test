@@ -1,0 +1,43 @@
+name: Nightly Drift Report
+
+"on":
+  schedule:
+    # 18:00 UTC = 01:00 sáng giờ Việt Nam (UTC+7) ngày hôm sau.
+    - cron: "0 18 * * *"
+  workflow_dispatch:  # cho phép bấm chạy tay để test, không cần đợi tới giờ cron
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # requirements/monitoring.lock (phiên 13.4) — CỐ Ý không kèm torch
+      # (xem header file đó + requirements/monitoring.in), cùng lý do đã
+      # ghi ở đây từ trước: drift_report.py không cần torch, chỉ pandas +
+      # evidently + psycopg2. --no-deps cho chính package (KHÔNG kéo
+      # torch/torchvision từ [project.dependencies]), lock file lo phần
+      # dependency thật sự cần, đã verify không xung đột version với 5
+      # lock file còn lại (xem requirements/monitoring.lock).
+      - run: |
+          pip install --no-deps -e .
+          pip install -r requirements/monitoring.lock
+
+      # KHÔNG cần dvc pull ở đây — reports/reference_stats.csv (sinh bởi
+      # monitoring/build_reference.py, phiên 11.1) là file CSV nhỏ, commit
+      # thẳng vào git (cùng cách xử lý reports/*.json metrics đã có sẵn từ
+      # dvc.yaml các stage trước), KHÔNG qua DVC. Nếu bạn CHƯA commit file
+      # này, bước dưới sẽ fail với lỗi rõ ràng (không tìm thấy file).
+      - run: python scripts/run_drift_report.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: drift-report
+          path: reports/drift_*.html

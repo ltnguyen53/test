@@ -1,0 +1,37 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Dữ liệu do DVC quản lý — không commit thẳng vào git, chỉ commit file .dvc
+# LƯU Ý: ignore theo EXTENSION video, không ignore cả /data/raw — để
+# data/raw/labels.csv (nhãn, nhẹ, cần thiết để tái tạo pipeline) vẫn được
+# git track bình thường. Ignore cả thư mục sẽ khiến file này bị ẩn âm thầm.
+#
+# Dùng ** (globstar) thay vì * — UCF101/UCF11 (phiên 13.1) đặt video trong
+# thư mục con theo tên class (vd data/raw/ApplyEyeMakeup/*.avi), pattern
+# */.avi (1 dấu sao) KHÔNG khớp qua thư mục con, chỉ khớp file nằm TRỰC
+# TIẾP trong data/raw/ — lỗi thật đã sửa ở phiên 13.1.
+/data/raw/**/*.mp4
+/data/raw/**/*.avi
+/data/raw/**/*.mov
+/data/raw/ucfTrainTestlist/   # metadata UCF gốc (classInd.txt...) — tải lại được từ nguồn UCF, không cần commit
+/data/interim
+/data/processed
+/data/external
+
+# MLflow chạy local (khi chưa dùng remote DagsHub)
+mlruns/
+mlartifacts/
+
+# Resume state (phiên 13.2) — file TẠM chỉ tồn tại khi 1 lần train đang
+# chạy hoặc vừa bị ngắt giữa chừng, bị tự xoá khi train xong trọn vẹn.
+# KHÔNG phải checkpoint để suy luận (khác models/*_checkpoint.pt) — không
+# nên commit, kể cả khi vô tình còn sót lại sau 1 lần crash chưa resume.
+/models/*_resume_state.pt
